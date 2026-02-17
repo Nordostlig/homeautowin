@@ -53,7 +53,8 @@ Crie um arquivo .env na raiz do projeto e preencha com seus dados:
 EMAIL_USER=seu-email@gmail.com
 EMAIL_PASS=sua-senha-de-app-de-16-digitos
 EMAIL_TO=email-do-destinatario@provedor.com
-PORT=3000 ```
+PORT=3000
+```
 
 4- Inicie o servidor:
 
