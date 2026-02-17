@@ -29,41 +29,46 @@ HomeAuto/
 └── package.json         # Dependências do projeto
 ```
 
-##🛠️ Pré-requisitos
-Node.js instalado.
+## 🛠️ Pré-requisitos
+- Node.js instalado.
+- Uma conta Gmail e uma Senha de App gerada nas configurações de segurança do Google.
 
-Uma conta Gmail e uma Senha de App gerada nas configurações de segurança do Google.
+## 📦 Instalação e Configuração
+1. Clone o repositório:
 
-##📦 Instalação e Configuração
-Clone o repositório:
-
-Bash
+```bash
 git clone [https://github.com/seu-usuario/HomeAuto.git](https://github.com/seu-usuario/HomeAuto.git)
 cd HomeAuto
-Instale as dependências:
+```
 
-Bash
+2. Instale as dependências:
+```Bash
 npm install
-Configure as variáveis de ambiente:
+```
+
+3. Configure as variáveis de ambiente:
 Crie um arquivo .env na raiz do projeto e preencha com seus dados:
 
-Code snippet
+```text
 EMAIL_USER=seu-email@gmail.com
 EMAIL_PASS=sua-senha-de-app-de-16-digitos
 EMAIL_TO=email-do-destinatario@provedor.com
 PORT=3000
-Inicie o servidor:
+```
 
-Bash
+4- Inicie o servidor:
+
+```bash
 node server.js
 Acesse: http://localhost:3000
+```
 
-##🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias Utilizadas
 Backend: Node.js, Express, Nodemailer, Multer, Dotenv.
 
 Frontend: Bootstrap 5.3.3, Bootstrap Icons, CSS3, JavaScript (Fetch API).
 
-##📝 Licença
+## 📝 Licença
 Este projeto é para uso pessoal. Sinta-se à vontade para expandir!
 
 Desenvolvido por Cristhiano Mello em 2026.
@@ -78,3 +83,4 @@ Ao subir o projeto, lembre-se de que a pasta `uploads` e o arquivo `.env` **não
 node_modules/
 .env
 uploads/
+```
