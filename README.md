@@ -27,6 +27,7 @@ HomeAuto/
 ├── .env                 # Variáveis de ambiente (não rastreado pelo Git)
 ├── server.js            # Ponto de entrada da aplicação
 └── package.json         # Dependências do projeto
+```
 
 ##🛠️ Pré-requisitos
 Node.js instalado.
