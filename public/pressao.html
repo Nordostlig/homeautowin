@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeAuto - Diário de Pressão</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* Badges de classificação */
+        .badge-otima       { background-color: #166534; color: #d1fae5; }
+        .badge-normal      { background-color: #065f46; color: #a7f3d0; }
+        .badge-normal-alta { background-color: #78350f; color: #fde68a; }
+        .badge-has1        { background-color: #7c2d12; color: #fed7aa; }
+        .badge-has2        { background-color: #7f1d1d; color: #fecaca; }
+        .badge-has3        { background-color: #450a0a; color: #fca5a5; }
+
+        /* Tabela de histórico */
+        .historico-tabela thead th {
+            background-color: #111827;
+            color: #9ca3af;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid #374151;
+        }
+        .historico-tabela tbody tr {
+            border-bottom: 1px solid #1f2937;
+        }
+        .historico-tabela tbody tr:hover {
+            background-color: #1e3a5f33;
+        }
+
+        /* Valores de pressão na tabela */
+        .pressao-valor { font-size: 1.05rem; font-weight: 600; }
+
+        /* Input group fix dark */
+        .form-pressao .input-group-text {
+            min-width: 3.5rem;
+            justify-content: center;
+            font-weight: 600;
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+
+        /* Legenda */
+        .legenda-box {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        #semRegistros { display: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar-homeauto mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="index.html" class="brand-name">🏠 HomeAuto</a>
+            <div class="nav-actions">
+                <a href="index.html" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-house-door"></i> Menu Principal
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container main-content">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-7">
+
+                <h2 class="h4 mb-1"><i class="bi bi-heart-pulse me-2 text-danger"></i>Diário de Pressão Arterial</h2>
+                <p class="text-muted small mb-4">Registre suas medições diárias de pressão arterial.</p>
+
+                <!-- Formulário de registro -->
+                <div class="custom-card mb-4 form-pressao">
+                    <h6 class="text-uppercase text-muted mb-3" style="letter-spacing:1px; font-size:0.75rem;">Novo Registro</h6>
+                    <form id="formPressao" novalidate>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-5">
+                                <label class="form-label fw-semibold">Sistólica (PAS)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">PAS</span>
+                                    <input type="number" id="PAS" class="form-control form-control-lg"
+                                        placeholder="120" min="50" max="300" required>
+                                    <span class="input-group-text text-muted">mmHg</span>
+                                </div>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label fw-semibold">Diastólica (PAD)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">PAD</span>
+                                    <input type="number" id="PAD" class="form-control form-control-lg"
+                                        placeholder="80" min="30" max="200" required>
+                                    <span class="input-group-text text-muted">mmHg</span>
+                                </div>
+                            </div>
+                            <div class="col-2 d-grid">
+                                <button type="submit" id="btnRegistrar" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="alertForm" class="mt-3" style="display:none;"></div>
+                    </form>
+                </div>
+
+                <!-- Seletor de mês + botão PDF -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Histórico:</span>
+                        <select id="seletorMes" class="form-select form-select-sm w-auto"></select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="contadorRegistros" class="text-muted small me-1"></span>
+                        <button id="btnPDF" class="btn btn-sm btn-outline-danger" onclick="gerarPDF()" disabled>
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Baixar PDF
+                        </button>
+                        <button id="btnEmail" class="btn btn-sm btn-outline-primary" onclick="enviarPorEmail()" disabled>
+                            <i class="bi bi-envelope me-1"></i>Enviar por Email
+                        </button>
+                    </div>
+                </div>
+                <div id="alertAcoes" class="mb-2" style="display:none;"></div>
+
+                <!-- Tabela de histórico -->
+                <div class="custom-card">
+                    <div id="loadingHistorico" class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Carregando registros...
+                    </div>
+
+                    <div id="semRegistros" class="text-center py-4 text-muted">
+                        <i class="bi bi-clipboard2-pulse" style="font-size:2rem;"></i>
+                        <p class="mt-2 mb-0">Nenhum registro para este mês.</p>
+                        <small>Use o formulário acima para adicionar o primeiro.</small>
+                    </div>
+
+                    <div class="table-responsive" id="wrapperTabela" style="display:none;">
+                        <table class="table table-hover mb-0 historico-tabela">
+                            <thead>
+                                <tr>
+                                    <th>Data / Hora</th>
+                                    <th class="text-center">PAS</th>
+                                    <th class="text-center">PAD</th>
+                                    <th class="text-center">Classificação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpoTabela"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Legenda de classificação -->
+                <div class="legenda-box mt-3">
+                    <p class="text-muted small mb-2 fw-semibold">Referência SBC (mmHg):</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge badge-otima">Ótima &lt;120/80</span>
+                        <span class="badge badge-normal">Normal 120-129/80-84</span>
+                        <span class="badge badge-normal-alta">Normal-alta 130-139/85-89</span>
+                        <span class="badge badge-has1">HAS Est.1 140-159/90-99</span>
+                        <span class="badge badge-has2">HAS Est.2 160-179/100-109</span>
+                        <span class="badge badge-has3">HAS Est.3 ≥180/≥110</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer-homeauto">
+        <div class="container text-center">
+            <p class="mb-0">© 2026 <strong>HomeAuto</strong> - Cristhiano Mello</p>
+            <small>Automação Pessoal e Inteligente</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                          'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        let registrosAtuais = [];
+
+        function nomeMes(arquivo) {
+            const partes = arquivo.split('-');
+            const ano = partes[0];
+            const mes = parseInt(partes[1]) - 1;
+            return `${MESES_PT[mes]} ${ano}`;
+        }
+
+        function arquivoAtual() {
+            const agora = new Date();
+            const ano = agora.getFullYear();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            return `${ano}-${mes}-diariodepressao.csv`;
+        }
+
+        function classificarPressao(pas, pad) {
+            pas = parseInt(pas);
+            pad = parseInt(pad);
+            if (pas < 120 && pad < 80)    return { texto: 'Ótima',      classe: 'badge-otima' };
+            if (pas <= 129 && pad <= 84)  return { texto: 'Normal',      classe: 'badge-normal' };
+            if (pas <= 139 || pad <= 89)  return { texto: 'Normal-alta', classe: 'badge-normal-alta' };
+            if (pas <= 159 || pad <= 99)  return { texto: 'HAS Est. 1',  classe: 'badge-has1' };
+            if (pas <= 179 || pad <= 109) return { texto: 'HAS Est. 2',  classe: 'badge-has2' };
+            return                               { texto: 'HAS Est. 3',  classe: 'badge-has3' };
+        }
+
+        function formatarDataHora(dataHora) {
+            const [data, hora] = dataHora.split(' ');
+            if (!data) return dataHora;
+            const [ano, mes, dia] = data.split('-');
+            return `${dia}/${mes}/${ano} ${hora || ''}`.trim();
+        }
+
+        function mostrarAlerta(msg, tipo) {
+            const el = document.getElementById('alertForm');
+            el.innerHTML = `<div class="alert alert-${tipo} py-2 mb-0">${msg}</div>`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        async function carregarArquivos() {
+            const res = await fetch('/pressao/arquivos');
+            const arquivos = await res.json();
+
+            const sel = document.getElementById('seletorMes');
+            sel.innerHTML = '';
+
+            const atual = arquivoAtual();
+
+            if (!arquivos.includes(atual)) {
+                const opt = document.createElement('option');
+                opt.value = atual;
+                opt.textContent = nomeMes(atual) + ' (atual)';
+                sel.appendChild(opt);
+            }
+
+            arquivos.forEach(arq => {
+                const opt = document.createElement('option');
+                opt.value = arq;
+                opt.textContent = nomeMes(arq) + (arq === atual ? ' (atual)' : '');
+                sel.appendChild(opt);
+            });
+
+            sel.value = atual;
+            await carregarRegistros(atual);
+        }
+
+        async function carregarRegistros(arquivo) {
+            document.getElementById('loadingHistorico').style.display = 'block';
+            document.getElementById('wrapperTabela').style.display = 'none';
+            document.getElementById('semRegistros').style.display = 'none';
+            document.getElementById('contadorRegistros').textContent = '';
+            document.getElementById('alertAcoes').style.display = 'none';
+            document.getElementById('btnPDF').disabled = true;
+            document.getElementById('btnEmail').disabled = true;
+
+            const res = await fetch(`/pressao/registros/${encodeURIComponent(arquivo)}`);
+            const registros = await res.json();
+
+            registrosAtuais = Array.isArray(registros) ? registros : [];
+
+            document.getElementById('loadingHistorico').style.display = 'none';
+
+            if (registrosAtuais.length === 0) {
+                document.getElementById('semRegistros').style.display = 'block';
+                return;
+            }
+
+            const tbody = document.getElementById('corpoTabela');
+            tbody.innerHTML = '';
+
+            registrosAtuais.forEach(r => {
+                const classif = classificarPressao(r.PAS, r.PAD);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-muted small">${formatarDataHora(r.data_hora)}</td>
+                    <td class="text-center pressao-valor">${r.PAS}</td>
+                    <td class="text-center pressao-valor">${r.PAD}</td>
+                    <td class="text-center"><span class="badge ${classif.classe}">${classif.texto}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('wrapperTabela').style.display = 'block';
+            document.getElementById('contadorRegistros').textContent =
+                `${registrosAtuais.length} registro${registrosAtuais.length !== 1 ? 's' : ''}`;
+            document.getElementById('btnPDF').disabled = false;
+            document.getElementById('btnEmail').disabled = false;
+        }
+
+        document.getElementById('seletorMes').addEventListener('change', function () {
+            if (this.value) carregarRegistros(this.value);
+        });
+
+        document.getElementById('formPressao').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const PAS = document.getElementById('PAS').value.trim();
+            const PAD = document.getElementById('PAD').value.trim();
+
+            if (!PAS || !PAD) {
+                mostrarAlerta('Preencha os dois campos.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btnRegistrar');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            try {
+                const res = await fetch('/pressao/registros', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ PAS, PAD })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    mostrarAlerta(data.erro || 'Erro ao salvar registro.', 'danger');
+                    return;
+                }
+
+                mostrarAlerta('Registro salvo com sucesso!', 'success');
+                document.getElementById('PAS').value = '';
+                document.getElementById('PAD').value = '';
+                await carregarArquivos();
+
+            } catch (err) {
+                mostrarAlerta('Erro de conexão com o servidor.', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-plus-lg"></i>';
+            }
+        });
+
+        function criarDocPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const arquivoSelecionado = document.getElementById('seletorMes').value;
+            const periodo = nomeMes(arquivoSelecionado);
+            const dataGeracao = new Date().toLocaleDateString('pt-BR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            doc.setFontSize(18);
+            doc.setTextColor(30, 41, 59);
+            doc.text('Diário de Pressão Arterial', 105, 22, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Período: ${periodo}`, 105, 30, { align: 'center' });
+
+            doc.setDrawColor(200);
+            doc.line(14, 35, 196, 35);
+
+            doc.setFontSize(11);
+            doc.setTextColor(30, 41, 59);
+            doc.text('Paciente:', 14, 44);
+            doc.setFont(undefined, 'bold');
+            doc.text('Cristhiano Mello', 42, 44);
+            doc.setFont(undefined, 'normal');
+            doc.text('Telefone:', 14, 52);
+            doc.setFont(undefined, 'bold');
+            doc.text('(41) 99978-7508', 42, 52);
+            doc.setFont(undefined, 'normal');
+
+            const linhasTabela = [...registrosAtuais].reverse().map(r => [
+                formatarDataHora(r.data_hora),
+                r.PAS + ' mmHg',
+                r.PAD + ' mmHg',
+                classificarPressao(r.PAS, r.PAD).texto
+            ]);
+
+            doc.autoTable({
+                startY: 60,
+                head: [['Data / Hora', 'PAS (Sistólica)', 'PAD (Diastólica)', 'Classificação']],
+                body: linhasTabela,
+                headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', fontSize: 10 },
+                bodyStyles: { fontSize: 10, textColor: [30, 41, 59] },
+                alternateRowStyles: { fillColor: [241, 245, 249] },
+                columnStyles: { 1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center' } },
+                margin: { left: 14, right: 14 }
+            });
+
+            // Referência SBC logo abaixo da tabela
+            const fimTabela = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(8);
+            doc.setTextColor(120);
+            doc.setFont(undefined, 'italic');
+            doc.text(
+                'Classificação conforme as Diretrizes Brasileiras de Hipertensão Arterial — Sociedade Brasileira de Cardiologia (SBC), 2020.',
+                14, fimTabela
+            );
+            doc.setFont(undefined, 'normal');
+
+            // Rodapé
+            const altPagina = doc.internal.pageSize.height;
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Gerado em ${dataGeracao}  •  Diário de Pressão Arterial — HomeAuto`,
+                105, altPagina - 10, { align: 'center' }
+            );
+
+            return { doc, periodo, arquivoSelecionado };
+        }
+
+        function gerarPDF() {
+            if (registrosAtuais.length === 0) return;
+            const { doc, arquivoSelecionado } = criarDocPDF();
+            const nomeBase = arquivoSelecionado.replace('-diariodepressao.csv', '');
+            doc.save(`${nomeBase} - DiarioDePressao - CristhianoMello.pdf`);
+        }
+
+        async function enviarPorEmail() {
+            if (registrosAtuais.length === 0) return;
+
+            const btnEmail = document.getElementById('btnEmail');
+            const btnPDF   = document.getElementById('btnPDF');
+            btnEmail.disabled = true;
+            btnPDF.disabled   = true;
+            btnEmail.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+            const alertAcoes = document.getElementById('alertAcoes');
+            alertAcoes.style.display = 'none';
+
+            try {
+                const { doc, periodo, arquivoSelecionado } = criarDocPDF();
+                const nomeBase    = arquivoSelecionado.replace('-diariodepressao.csv', '');
+                const nomeArquivo = `${nomeBase} - DiarioDePressao - CristhianoMello.pdf`;
+                const pdfBase64   = doc.output('datauristring').split(',')[1];
+
+                const res = await fetch('/pressao/enviar-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pdfBase64, periodo, nomeArquivo })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alertAcoes.innerHTML = `<div class="alert alert-danger py-2 mb-0">${data.erro || 'Erro no envio.'}</div>`;
+                } else {
+                    alertAcoes.innerHTML = `<div class="alert alert-success py-2 mb-0">Email enviado com sucesso!</div>`;
+                    setTimeout(() => { alertAcoes.style.display = 'none'; }, 5000);
+                }
+                alertAcoes.style.display = 'block';
+
+            } catch (err) {
+                alertAcoes.innerHTML = `<div class="alert alert-danger py-2 mb-0">Erro de conexão com o servidor.</div>`;
+                alertAcoes.style.display = 'block';
+            } finally {
+                btnEmail.disabled = false;
+                btnPDF.disabled   = false;
+                btnEmail.innerHTML = '<i class="bi bi-envelope me-1"></i>Enviar por Email';
+            }
+        }
+
+        // Inicialização
+        carregarArquivos();
+    </script>
+</body>
+</html>

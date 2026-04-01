@@ -42,7 +42,7 @@ exports.enviarBoleto = async (req, res) => {
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_TO,
+            to: process.env.EMAIL_TO_IMOB,
             subject: `${ano}${mesNum} - Boleto e Comprovante`,
             text: `Seguem anexos arquivos com o boleto e o comprovante de pagamento do condomínio com vencimento em ${mesExtenso}/${anoCurto}.\n\n\nAtt.\nCristhiano Mello`,
             attachments: req.files.map(file => ({
