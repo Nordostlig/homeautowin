@@ -9,12 +9,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         /* Badges de classificação */
-        .badge-otima       { background-color: #166534; color: #d1fae5; }
-        .badge-normal      { background-color: #065f46; color: #a7f3d0; }
-        .badge-normal-alta { background-color: #78350f; color: #fde68a; }
-        .badge-has1        { background-color: #7c2d12; color: #fed7aa; }
-        .badge-has2        { background-color: #7f1d1d; color: #fecaca; }
-        .badge-has3        { background-color: #450a0a; color: #fca5a5; }
+        .badge-normal { background-color: #166534; color: #d1fae5; }
+        .badge-pre    { background-color: #78350f; color: #fde68a; }
+        .badge-has1   { background-color: #7c2d12; color: #fed7aa; }
+        .badge-has2   { background-color: #7f1d1d; color: #fecaca; }
+        .badge-has3   { background-color: #450a0a; color: #fca5a5; }
 
         /* Tabela de histórico */
         .historico-tabela thead th {
@@ -157,11 +156,10 @@
 
                 <!-- Legenda de classificação -->
                 <div class="legenda-box mt-3">
-                    <p class="text-muted small mb-2 fw-semibold">Referência SBC (mmHg):</p>
+                    <p class="text-muted small mb-2 fw-semibold">Diretriz Brasileira de Hipertensão Arterial 2025 (mmHg):</p>
                     <div class="d-flex flex-wrap gap-2">
-                        <span class="badge badge-otima">Ótima &lt;120/80</span>
-                        <span class="badge badge-normal">Normal 120-129/80-84</span>
-                        <span class="badge badge-normal-alta">Normal-alta 130-139/85-89</span>
+                        <span class="badge badge-normal">Normal &lt;120/&lt;80</span>
+                        <span class="badge badge-pre">Pré-HAS 120-139/80-89</span>
                         <span class="badge badge-has1">HAS Est.1 140-159/90-99</span>
                         <span class="badge badge-has2">HAS Est.2 160-179/100-109</span>
                         <span class="badge badge-has3">HAS Est.3 ≥180/≥110</span>
@@ -205,12 +203,11 @@
         function classificarPressao(pas, pad) {
             pas = parseInt(pas);
             pad = parseInt(pad);
-            if (pas < 120 && pad < 80)    return { texto: 'Ótima',      classe: 'badge-otima' };
-            if (pas <= 129 && pad <= 84)  return { texto: 'Normal',      classe: 'badge-normal' };
-            if (pas <= 139 || pad <= 89)  return { texto: 'Normal-alta', classe: 'badge-normal-alta' };
-            if (pas <= 159 || pad <= 99)  return { texto: 'HAS Est. 1',  classe: 'badge-has1' };
-            if (pas <= 179 || pad <= 109) return { texto: 'HAS Est. 2',  classe: 'badge-has2' };
-            return                               { texto: 'HAS Est. 3',  classe: 'badge-has3' };
+            if (pas >= 180 || pad >= 110) return { texto: 'HAS Est. 3', classe: 'badge-has3' };
+            if (pas >= 160 || pad >= 100) return { texto: 'HAS Est. 2', classe: 'badge-has2' };
+            if (pas >= 140 || pad >=  90) return { texto: 'HAS Est. 1', classe: 'badge-has1' };
+            if (pas >= 120 || pad >=  80) return { texto: 'Pré-HAS',    classe: 'badge-pre'  };
+            return                               { texto: 'Normal',     classe: 'badge-normal' };
         }
 
         function formatarDataHora(dataHora) {
@@ -400,7 +397,7 @@
             doc.setTextColor(120);
             doc.setFont(undefined, 'italic');
             doc.text(
-                'Classificação conforme as Diretrizes Brasileiras de Hipertensão Arterial — Sociedade Brasileira de Cardiologia (SBC), 2020.',
+                'Classificação conforme a Diretriz Brasileira de Hipertensão Arterial — Sociedade Brasileira de Cardiologia (SBC), 2025.',
                 14, fimTabela
             );
             doc.setFont(undefined, 'normal');
