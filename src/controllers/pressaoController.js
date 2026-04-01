@@ -1,101 +1,66 @@
-const fs = require('fs');
-const path = require('path');
-const nodemailer = require('nodemailer');
+﻿const nodemailer = require('nodemailer');
+const pressaoStore = require('../services/pressaoStore');
 
-const DADOS_DIR = path.join(__dirname, '../../dados/pressao');
+const MES_REGEX = /^\d{4}-\d{2}$/;
 
-function garantirDiretorio() {
-    if (!fs.existsSync(DADOS_DIR)) {
-        fs.mkdirSync(DADOS_DIR, { recursive: true });
-    }
-}
-
-function nomeArquivoAtual() {
-    const agora = new Date();
-    const ano = agora.getFullYear();
-    const mes = String(agora.getMonth() + 1).padStart(2, '0');
-    return `${ano}-${mes}-diariodepressao.csv`;
-}
-
-function dataHoraAgora() {
-    const agora = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())} ${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
-}
-
-exports.listarArquivos = (req, res) => {
-    garantirDiretorio();
+exports.listarMeses = (req, res) => {
     try {
-        const arquivos = fs.readdirSync(DADOS_DIR)
-            .filter(f => /^\d{4}-\d{2}-diariodepressao\.csv$/.test(f))
-            .sort()
-            .reverse();
-        res.json(arquivos);
-    } catch (err) {
-        res.status(500).json({ erro: 'Erro ao listar arquivos' });
+        res.json(pressaoStore.listMonths());
+    } catch (error) {
+        console.error('Erro ao listar meses de pressao:', error.message);
+        res.status(500).json({ erro: 'Erro ao listar meses' });
     }
 };
 
 exports.lerRegistros = (req, res) => {
-    garantirDiretorio();
-    const arquivo = req.params.arquivo;
+    const { mes } = req.query;
 
-    if (!/^\d{4}-\d{2}-diariodepressao\.csv$/.test(arquivo)) {
-        return res.status(400).json({ erro: 'Nome de arquivo inválido' });
-    }
-
-    const caminho = path.join(DADOS_DIR, arquivo);
-
-    if (!fs.existsSync(caminho)) {
-        return res.json([]);
+    if (!MES_REGEX.test(mes || '')) {
+        return res.status(400).json({ erro: 'Mes invalido. Use o formato YYYY-MM.' });
     }
 
     try {
-        const conteudo = fs.readFileSync(caminho, 'utf-8');
-        const linhas = conteudo.trim().split('\n').filter(l => l.trim());
-
-        // Pula o cabeçalho e retorna do mais novo para o mais antigo
-        const registros = linhas.slice(1).map(linha => {
-            const partes = linha.split(',');
-            return {
-                data_hora: partes[0],
-                PAS: partes[1],
-                PAD: partes[2]
-            };
-        }).reverse();
-
-        res.json(registros);
-    } catch (err) {
-        res.status(500).json({ erro: 'Erro ao ler arquivo' });
+        res.json(pressaoStore.listRecordsByMonth(mes));
+    } catch (error) {
+        console.error('Erro ao ler registros de pressao:', error.message);
+        res.status(500).json({ erro: 'Erro ao ler registros' });
     }
 };
 
 exports.adicionarRegistro = (req, res) => {
-    garantirDiretorio();
     const { PAS, PAD } = req.body;
 
     if (!PAS || !PAD) {
-        return res.status(400).json({ erro: 'PAS e PAD são obrigatórios' });
+        return res.status(400).json({ erro: 'PAS e PAD sao obrigatorios' });
     }
 
-    const pas = parseInt(PAS);
-    const pad = parseInt(PAD);
+    const pas = Number.parseInt(PAS, 10);
+    const pad = Number.parseInt(PAD, 10);
 
-    if (isNaN(pas) || isNaN(pad) || pas < 50 || pas > 300 || pad < 30 || pad > 200) {
-        return res.status(400).json({ erro: 'Valores de pressão inválidos' });
+    if (Number.isNaN(pas) || Number.isNaN(pad) || pas < 50 || pas > 300 || pad < 30 || pad > 200) {
+        return res.status(400).json({ erro: 'Valores de pressao invalidos' });
     }
 
-    const dataHora = dataHoraAgora();
-    const arquivo = nomeArquivoAtual();
-    const caminho = path.join(DADOS_DIR, arquivo);
-
-    if (!fs.existsSync(caminho)) {
-        fs.writeFileSync(caminho, 'data_hora,PAS,PAD\n', 'utf-8');
+    try {
+        const registro = pressaoStore.addRecord({ pas, pad });
+        res.json({ sucesso: true, ...registro });
+    } catch (error) {
+        console.error('Erro ao adicionar registro de pressao:', error.message);
+        res.status(500).json({ erro: 'Erro ao salvar registro' });
     }
+};
 
-    fs.appendFileSync(caminho, `${dataHora},${pas},${pad}\n`, 'utf-8');
-
-    res.json({ sucesso: true, arquivo, data_hora: dataHora, PAS: pas, PAD: pad });
+exports.migrarLegado = (req, res) => {
+    try {
+        const summary = pressaoStore.importLegacyCsvFiles();
+        res.json({
+            sucesso: true,
+            ...summary
+        });
+    } catch (error) {
+        console.error('Erro ao migrar arquivos legados de pressao:', error.message);
+        res.status(500).json({ erro: 'Erro ao migrar planilhas legadas' });
+    }
 };
 
 exports.enviarRelatorioPressao = async (req, res) => {
@@ -119,8 +84,8 @@ exports.enviarRelatorioPressao = async (req, res) => {
         await transporter.sendMail({
             from: process.env.EMAIL_FROM_MEDICA,
             to: process.env.EMAIL_TO_MEDICA,
-            subject: `Diário de Pressão Arterial — ${periodo}`,
-            text: `Olá,\n\nSegue em anexo o diário de pressão arterial do período ${periodo}.\n\nAtt.\nCristhiano Mello`,
+            subject: `Diario de Pressao Arterial - ${periodo}`,
+            text: `Ola,\n\nSegue em anexo o diario de pressao arterial do periodo ${periodo}.\n\nAtt.\nCristhiano Mello`,
             attachments: [{
                 filename: nomeArquivo,
                 content: pdfBuffer,
@@ -130,7 +95,7 @@ exports.enviarRelatorioPressao = async (req, res) => {
 
         res.json({ sucesso: true });
     } catch (error) {
-        console.error('Erro ao enviar email de pressão:', error.message);
+        console.error('Erro ao enviar email de pressao:', error.message);
         res.status(500).json({ erro: 'Falha no envio do email.' });
     }
 };

@@ -3,6 +3,9 @@ const express = require('express');
 const app = express();
 const emailRoutes = require('./src/routes/emailRoutes');
 const pressaoRoutes = require('./src/routes/pressaoRoutes');
+const { initializePressureStore } = require('./src/services/pressaoStore');
+
+initializePressureStore();
 
 // Middlewares
 app.use(express.json({ limit: '5mb' }));
