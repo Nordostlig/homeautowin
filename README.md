@@ -94,7 +94,7 @@ EMAIL_TO_MEDICA=email-da-medica@provedor.com
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/cfmello/HomeAuto.git
+git clone https://github.com/Nordostlig/homeautowin.git
 cd HomeAuto
 ```
 
