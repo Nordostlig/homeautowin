@@ -104,7 +104,7 @@
                                 <label class="form-label fw-semibold">Sistolica (PAS)</label>
                                 <div class="input-group">
                                     <span class="input-group-text">PAS</span>
-                                    <input type="number" id="PAS" class="form-control form-control-lg" placeholder="120" min="50" max="300" required>
+                                    <input type="number" id="PAS" class="form-control form-control-lg" placeholder="120" min="50" max="300" tabindex="1" required>
                                     <span class="input-group-text text-muted">mmHg</span>
                                 </div>
                             </div>
@@ -112,12 +112,12 @@
                                 <label class="form-label fw-semibold">Diastolica (PAD)</label>
                                 <div class="input-group">
                                     <span class="input-group-text">PAD</span>
-                                    <input type="number" id="PAD" class="form-control form-control-lg" placeholder="80" min="30" max="200" required>
+                                    <input type="number" id="PAD" class="form-control form-control-lg" placeholder="80" min="30" max="200" tabindex="2" required>
                                     <span class="input-group-text text-muted">mmHg</span>
                                 </div>
                             </div>
                             <div class="col-2 d-grid">
-                                <button type="submit" id="btnRegistrar" class="btn btn-primary btn-lg">
+                                <button type="submit" id="btnRegistrar" class="btn btn-primary btn-lg" tabindex="4">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
                             </div>
@@ -125,7 +125,7 @@
                         <div class="row mt-2">
                             <div class="col-12">
                                 <label class="form-label fw-semibold mb-1">Observacoes <span class="text-muted fw-normal">(opcional)</span></label>
-                                <textarea id="observacao" class="form-control form-control-sm" rows="2" maxlength="150" placeholder="Anote informacoes relevantes sobre esta medicao..."></textarea>
+                                <textarea id="observacao" class="form-control form-control-sm" rows="2" maxlength="150" placeholder="Anote informacoes relevantes sobre esta medicao..." tabindex="3"></textarea>
                                 <div class="form-text text-end mt-0"><span id="obsContador">0</span>/150</div>
                             </div>
                         </div>
@@ -622,6 +622,13 @@
 
         document.getElementById('observacao').addEventListener('input', function () {
             document.getElementById('obsContador').textContent = this.value.length;
+        });
+
+        document.getElementById('observacao').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('formPressao').requestSubmit();
+            }
         });
 
         document.getElementById('editObservacao').addEventListener('input', function () {
