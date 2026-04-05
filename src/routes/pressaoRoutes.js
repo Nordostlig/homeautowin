@@ -10,6 +10,8 @@ router.get('/pressao', (req, res) => {
 router.get('/pressao/meses', pressaoController.listarMeses);
 router.get('/pressao/registros', pressaoController.lerRegistros);
 router.post('/pressao/registros', pressaoController.adicionarRegistro);
+router.put('/pressao/registros/:id', pressaoController.atualizarRegistro);
+router.delete('/pressao/registros/:id', pressaoController.excluirRegistro);
 router.post('/pressao/migrar-legado', pressaoController.migrarLegado);
 router.post('/pressao/enviar-email', pressaoController.enviarRelatorioPressao);
 

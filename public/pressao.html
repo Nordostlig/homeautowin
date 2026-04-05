@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -55,6 +55,25 @@
         #semRegistros {
             display: none;
         }
+
+        .obs-row td {
+            background-color: #0d1117;
+            border-top: none !important;
+            padding-top: 2px !important;
+        }
+
+        .btn-acao {
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+
+        .btn-acao:hover {
+            opacity: 1;
+        }
+
+        .record-row {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -103,7 +122,14 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="alertForm" class="mt-3" style="display:none;"></div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold mb-1">Observacoes <span class="text-muted fw-normal">(opcional)</span></label>
+                                <textarea id="observacao" class="form-control form-control-sm" rows="2" maxlength="150" placeholder="Anote informacoes relevantes sobre esta medicao..."></textarea>
+                                <div class="form-text text-end mt-0"><span id="obsContador">0</span>/150</div>
+                            </div>
+                        </div>
+                        <div id="alertForm" class="mt-2" style="display:none;"></div>
                     </form>
                 </div>
 
@@ -113,7 +139,6 @@
                         <select id="seletorMes" class="form-select form-select-sm w-auto"></select>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                        
                         <span id="contadorRegistros" class="text-muted small me-1"></span>
                         <button id="btnPDF" class="btn btn-sm btn-outline-danger" onclick="gerarPDF()" disabled>
                             <i class="bi bi-file-earmark-pdf me-1"></i>Baixar PDF
@@ -145,6 +170,7 @@
                                     <th class="text-center">PAS</th>
                                     <th class="text-center">PAD</th>
                                     <th class="text-center">Classificacao</th>
+                                    <th class="text-center">Acoes</th>
                                 </tr>
                             </thead>
                             <tbody id="corpoTabela"></tbody>
@@ -167,6 +193,55 @@
         </div>
     </main>
 
+    <!-- Modal de Edicao -->
+    <div class="modal fade" id="modalEdicao" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark border border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="bi bi-pencil me-2 text-info"></i>Editar Registro</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editId">
+                    <div id="alertModal" class="mb-3" style="display:none;"></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Data e Hora</label>
+                        <input type="datetime-local" id="editDataHora" class="form-control">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">PAS (Sistolica)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background-color:#374151;border-color:#4b5563;color:#d1d5db;">PAS</span>
+                                <input type="number" id="editPAS" class="form-control" min="50" max="300">
+                                <span class="input-group-text text-muted" style="background-color:#374151;border-color:#4b5563;">mmHg</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">PAD (Diastolica)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background-color:#374151;border-color:#4b5563;color:#d1d5db;">PAD</span>
+                                <input type="number" id="editPAD" class="form-control" min="30" max="200">
+                                <span class="input-group-text text-muted" style="background-color:#374151;border-color:#4b5563;">mmHg</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold mb-1">Observacoes <span class="text-muted fw-normal">(opcional)</span></label>
+                        <textarea id="editObservacao" class="form-control" rows="3" maxlength="150" placeholder="Max. 150 caracteres"></textarea>
+                        <div class="form-text text-end mt-0"><span id="editObsContador">0</span>/150</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnSalvarEdicao" class="btn btn-primary" onclick="salvarEdicao()">
+                        <i class="bi bi-check-lg me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer-homeauto">
         <div class="container text-center">
             <p class="mb-0">© 2026 <strong>HomeAuto</strong> - Cristhiano Mello</p>
@@ -174,7 +249,8 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script>
@@ -182,6 +258,15 @@
 
         let registrosAtuais = [];
         let mesSelecionadoAtual = null;
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function formatarMes(mes) {
             if (!/^\d{4}-\d{2}$/.test(mes || '')) return mes || '';
@@ -237,8 +322,8 @@
 
             if (pas >= 180 || pad >= 110) return { texto: 'HAS Est. 3', classe: 'badge-has3' };
             if (pas >= 160 || pad >= 100) return { texto: 'HAS Est. 2', classe: 'badge-has2' };
-            if (pas >= 140 || pad >= 90) return { texto: 'HAS Est. 1', classe: 'badge-has1' };
-            if (pas >= 120 || pad >= 80) return { texto: 'Pre-HAS', classe: 'badge-pre' };
+            if (pas >= 140 || pad >= 90)  return { texto: 'HAS Est. 1', classe: 'badge-has1' };
+            if (pas >= 120 || pad >= 80)  return { texto: 'Pre-HAS',    classe: 'badge-pre' };
             return { texto: 'Normal', classe: 'badge-normal' };
         }
 
@@ -342,6 +427,12 @@
             }
         }
 
+        function toggleObs(id) {
+            const trObs = document.getElementById(`obs-${id}`);
+            if (!trObs) return;
+            trObs.style.display = trObs.style.display === 'none' ? 'table-row' : 'none';
+        }
+
         async function carregarRegistros(mes) {
             mesSelecionadoAtual = mes;
             atualizarUrlMes(mes);
@@ -370,14 +461,36 @@
 
                 registrosAtuais.forEach(registro => {
                     const classificacao = classificarPressao(registro.PAS, registro.PAD);
+                    const obsHtml = registro.observacao
+                        ? escapeHtml(registro.observacao)
+                        : '<em class="text-muted">Sem observacoes</em>';
+
                     const tr = document.createElement('tr');
+                    tr.className = 'record-row';
+                    tr.setAttribute('data-id', registro.id);
                     tr.innerHTML = `
                         <td class="text-muted small">${formatarDataHora(registro.data_hora)}</td>
                         <td class="text-center pressao-valor">${registro.PAS}</td>
                         <td class="text-center pressao-valor">${registro.PAD}</td>
                         <td class="text-center"><span class="badge ${classificacao.classe}">${classificacao.texto}</span></td>
+                        <td class="text-center text-nowrap">
+                            <button class="btn btn-link btn-sm p-0 me-2 btn-acao text-info" title="Editar" onclick="event.stopPropagation(); abrirModalEdicao(${registro.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-link btn-sm p-0 btn-acao text-danger" title="Excluir" onclick="event.stopPropagation(); excluirRegistroConfirmar(${registro.id})">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </td>
                     `;
+                    tr.addEventListener('click', () => toggleObs(registro.id));
                     tbody.appendChild(tr);
+
+                    const trObs = document.createElement('tr');
+                    trObs.id = `obs-${registro.id}`;
+                    trObs.className = 'obs-row';
+                    trObs.style.display = 'none';
+                    trObs.innerHTML = `<td colspan="5" class="py-2 px-4"><small>${obsHtml}</small></td>`;
+                    tbody.appendChild(trObs);
                 });
 
                 document.getElementById('wrapperTabela').style.display = 'block';
@@ -391,10 +504,128 @@
             }
         }
 
+        function abrirModalEdicao(id) {
+            const registro = registrosAtuais.find(r => r.id === id);
+            if (!registro) return;
+
+            document.getElementById('editId').value = id;
+            document.getElementById('editDataHora').value = registro.data_hora.replace(' ', 'T');
+            document.getElementById('editPAS').value = registro.PAS;
+            document.getElementById('editPAD').value = registro.PAD;
+            const obs = registro.observacao || '';
+            document.getElementById('editObservacao').value = obs;
+            document.getElementById('editObsContador').textContent = obs.length;
+            document.getElementById('alertModal').style.display = 'none';
+
+            new bootstrap.Modal(document.getElementById('modalEdicao')).show();
+        }
+
+        async function salvarEdicao() {
+            const id = Number(document.getElementById('editId').value);
+            const dataHoraRaw = document.getElementById('editDataHora').value;
+            const PAS = document.getElementById('editPAS').value.trim();
+            const PAD = document.getElementById('editPAD').value.trim();
+            const observacao = document.getElementById('editObservacao').value.trim();
+
+            const alertModal = document.getElementById('alertModal');
+            function mostrarErroModal(msg) {
+                alertModal.innerHTML = `<div class="alert alert-danger py-2 mb-0">${msg}</div>`;
+                alertModal.style.display = 'block';
+            }
+
+            if (!dataHoraRaw || !PAS || !PAD) {
+                mostrarErroModal('Preencha todos os campos obrigatorios.');
+                return;
+            }
+
+            const data_hora = dataHoraRaw.replace('T', ' ');
+
+            const btnSalvar = document.getElementById('btnSalvarEdicao');
+            btnSalvar.disabled = true;
+            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+            alertModal.style.display = 'none';
+
+            try {
+                const res = await fetch(`/pressao/registros/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ PAS, PAD, observacao, data_hora })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    mostrarErroModal(data.erro || 'Erro ao salvar alteracoes.');
+                    return;
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('modalEdicao')).hide();
+                mostrarAlertaAcoes('Registro atualizado com sucesso!', 'success');
+                setTimeout(() => esconderAlertaAcoes(), 4000);
+                await carregarMeses(mesSelecionadoAtual || mesAtual());
+            } catch (error) {
+                mostrarErroModal('Erro de conexao com o servidor.');
+            } finally {
+                btnSalvar.disabled = false;
+                btnSalvar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+            }
+        }
+
+        async function excluirRegistroConfirmar(id) {
+            const result = await Swal.fire({
+                title: 'Excluir registro?',
+                text: 'Esta acao nao pode ser desfeita.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: 'Sim, excluir',
+                cancelButtonText: 'Cancelar',
+                background: '#1f2937',
+                color: '#f9fafb'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const res = await fetch(`/pressao/registros/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: data.erro || 'Erro ao excluir registro.',
+                        background: '#1f2937',
+                        color: '#f9fafb'
+                    });
+                    return;
+                }
+
+                await carregarMeses(mesSelecionadoAtual || mesAtual());
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Erro de conexao com o servidor.',
+                    background: '#1f2937',
+                    color: '#f9fafb'
+                });
+            }
+        }
+
         document.getElementById('seletorMes').addEventListener('change', function () {
             if (this.value) {
                 carregarRegistros(this.value);
             }
+        });
+
+        document.getElementById('observacao').addEventListener('input', function () {
+            document.getElementById('obsContador').textContent = this.value.length;
+        });
+
+        document.getElementById('editObservacao').addEventListener('input', function () {
+            document.getElementById('editObsContador').textContent = this.value.length;
         });
 
         document.getElementById('formPressao').addEventListener('submit', async function (e) {
@@ -402,6 +633,7 @@
 
             const PAS = document.getElementById('PAS').value.trim();
             const PAD = document.getElementById('PAD').value.trim();
+            const observacao = document.getElementById('observacao').value.trim();
 
             if (!PAS || !PAD) {
                 mostrarAlerta('Preencha os dois campos.', 'warning');
@@ -416,7 +648,7 @@
                 const res = await fetch('/pressao/registros', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ PAS, PAD })
+                    body: JSON.stringify({ PAS, PAD, observacao })
                 });
 
                 const data = await res.json();
@@ -429,6 +661,8 @@
                 mostrarAlerta('Registro salvo com sucesso!', 'success');
                 document.getElementById('PAS').value = '';
                 document.getElementById('PAD').value = '';
+                document.getElementById('observacao').value = '';
+                document.getElementById('obsContador').textContent = '0';
                 await carregarMeses(mesSelecionadoAtual || mesAtual());
             } catch (error) {
                 mostrarAlerta('Erro de conexao com o servidor.', 'danger');
@@ -478,17 +712,23 @@
                 formatarDataHora(registro.data_hora),
                 `${registro.PAS} mmHg`,
                 `${registro.PAD} mmHg`,
-                classificarPressao(registro.PAS, registro.PAD).texto
+                classificarPressao(registro.PAS, registro.PAD).texto,
+                registro.observacao || ''
             ]);
 
             doc.autoTable({
                 startY: 60,
-                head: [['Data / Hora', 'PAS (Sistolica)', 'PAD (Diastolica)', 'Classificacao']],
+                head: [['Data / Hora', 'PAS (Sistolica)', 'PAD (Diastolica)', 'Classificacao', 'Observacoes']],
                 body: linhasTabela,
-                headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', fontSize: 10 },
-                bodyStyles: { fontSize: 10, textColor: [30, 41, 59] },
+                headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+                bodyStyles: { fontSize: 9, textColor: [30, 41, 59] },
                 alternateRowStyles: { fillColor: [241, 245, 249] },
-                columnStyles: { 1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center' } },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { cellWidth: 45, overflow: 'linebreak' }
+                },
                 margin: { left: 14, right: 14 }
             });
 

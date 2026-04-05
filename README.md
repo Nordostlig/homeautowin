@@ -6,7 +6,7 @@ O **HomeAuto** é um hub de automação pessoal desenvolvido em Node.js seguindo
 
 - **Automação de E-mail**: Envio de 2 arquivos PDF com assunto e corpo de texto gerados dinamicamente com base no mês e ano atuais.
 - **Limpeza Inteligente**: A pasta de uploads é limpa automaticamente, removendo arquivos com mais de 60 dias (2 meses).
-- **Diário de Pressão Arterial**: Registro diário de pressão sistólica e diastólica, com classificação automática conforme a Diretriz Brasileira de Hipertensão Arterial (SBC, 2025), geração de relatório PDF e envio por e-mail.
+- **Diário de Pressão Arterial**: Registro, edição e exclusão de medições de pressão sistólica e diastólica, com campo de observações, classificação automática conforme a Diretriz Brasileira de Hipertensão Arterial (SBC, 2025), geração de relatório PDF e envio por e-mail.
 - **Interface Moderna**: Dashboard responsivo construído com Bootstrap 5.3 e Bootstrap Icons, com suporte a modo escuro.
 - **Segurança**: Variáveis sensíveis isoladas em arquivo `.env`.
 
@@ -24,11 +24,13 @@ HomeAuto/
 │   ├── controllers/
 │   │   ├── emailController.js    # Envio de e-mails com boletos/comprovantes
 │   │   └── pressaoController.js  # CRUD do diário de pressão + envio de relatório
-│   └── routes/
-│       ├── emailRoutes.js
-│       └── pressaoRoutes.js
+│   ├── routes/
+│   │   ├── emailRoutes.js
+│   │   └── pressaoRoutes.js
+│   └── services/
+│       └── pressaoStore.js       # Camada de acesso ao banco SQLite
 ├── dados/
-│   └── pressao/             # CSVs mensais (YYYY-MM-diariodepressao.csv)
+│   └── homeauto.db          # Banco de dados SQLite (gerado automaticamente)
 ├── uploads/                 # Armazenamento temporário de arquivos
 ├── .env                     # Variáveis de ambiente (não rastreado pelo Git)
 ├── server.js                # Ponto de entrada da aplicação
@@ -37,12 +39,14 @@ HomeAuto/
 
 ## 🩺 Diário de Pressão Arterial
 
-O módulo de pressão permite registrar, consultar e exportar as medições diárias de pressão arterial.
+O módulo de pressão permite registrar, consultar, editar, excluir e exportar as medições diárias de pressão arterial.
 
 ### Funcionalidades
 
-- **Registro de medições** — Entrada de PAS (sistólica) e PAD (diastólica) com carimbo de data e hora automático.
-- **Histórico mensal** — Navegação entre meses via seletor; registros exibidos do mais recente para o mais antigo.
+- **Registro de medições** — Entrada de PAS (sistólica), PAD (diastólica) e observações opcionais (máx. 150 caracteres), com carimbo de data e hora automático.
+- **Edição retroativa** — Ícone de lápis em cada registro abre um modal para corrigir data/hora, PAS, PAD e observações. A classificação é recalculada automaticamente ao salvar.
+- **Exclusão** — Ícone X em cada registro exibe uma confirmação via SweetAlert2 antes de remover.
+- **Histórico mensal** — Navegação entre meses via seletor; registros exibidos do mais recente para o mais antigo. Clicar em uma linha expande as observações.
 - **Classificação automática** — Cada medição recebe um badge colorido de acordo com a Diretriz Brasileira de Hipertensão Arterial (SBC, 2025):
 
 | Classificação         | PAS (mmHg) | PAD (mmHg) |
@@ -53,27 +57,37 @@ O módulo de pressão permite registrar, consultar e exportar as medições diá
 | Hipertensão estágio 2 | 160–179   | 100–109   |
 | Hipertensão estágio 3 | ≥ 180     | ≥ 110     |
 
-- **Relatório PDF** — Gerado no navegador via jsPDF + jspdf-autotable, com tabela completa do mês e referência à diretriz.
+- **Relatório PDF** — Gerado no navegador via jsPDF + jspdf-autotable, com tabela completa do mês incluindo a coluna de observações e referência à diretriz.
 - **Envio por e-mail** — O PDF é enviado diretamente para o e-mail da médica configurado em `.env`.
 
 ### Armazenamento
 
-Os registros são salvos em CSVs mensais em `dados/pressao/`, com o formato:
+Os registros são salvos em banco de dados **SQLite** (`dados/homeauto.db`), criado automaticamente na primeira execução. O schema da tabela principal é:
 
-```text
-dados/pressao/
-├── 2026-01-diariodepressao.csv
-├── 2026-02-diariodepressao.csv
-└── 2026-03-diariodepressao.csv
+```sql
+CREATE TABLE pressao_registros (
+    id          INTEGER PRIMARY KEY,
+    measured_at TEXT NOT NULL,      -- formato: YYYY-MM-DD HH:MM
+    pas         INTEGER NOT NULL,
+    pad         INTEGER NOT NULL,
+    observacao  TEXT,               -- máx. 150 caracteres, opcional
+    created_at  TEXT NOT NULL,
+    source      TEXT NOT NULL DEFAULT 'manual'
+);
 ```
 
-Cada arquivo segue o esquema:
+> Registros importados de arquivos CSV legados (`dados/pressao/`) são migrados automaticamente na inicialização do servidor.
 
-```csv
-data_hora,PAS,PAD
-2026-03-15 08:30,120,80
-2026-03-15 20:00,118,76
-```
+### API REST (módulo de pressão)
+
+| Método   | Rota                        | Descrição                          |
+|----------|-----------------------------|------------------------------------|
+| GET      | `/pressao/meses`            | Lista meses com registros          |
+| GET      | `/pressao/registros?mes=`   | Lista registros de um mês          |
+| POST     | `/pressao/registros`        | Cria novo registro                 |
+| PUT      | `/pressao/registros/:id`    | Atualiza registro existente        |
+| DELETE   | `/pressao/registros/:id`    | Remove registro                    |
+| POST     | `/pressao/enviar-email`     | Envia PDF por e-mail               |
 
 ### Variáveis de Ambiente (módulo de pressão)
 
@@ -129,8 +143,8 @@ Acesse: http://localhost:3000
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Backend**: Node.js, Express, Nodemailer, Multer, Dotenv
-- **Frontend**: Bootstrap 5.3, Bootstrap Icons, CSS3, JavaScript (Fetch API)
+- **Backend**: Node.js, Express, SQLite (`node:sqlite`), Nodemailer, Multer, Dotenv
+- **Frontend**: Bootstrap 5.3, Bootstrap Icons, SweetAlert2, CSS3, JavaScript (Fetch API)
 - **PDF**: jsPDF, jspdf-autotable
 
 ## 📝 Licença

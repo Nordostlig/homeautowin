@@ -58,6 +58,12 @@ function createSchema() {
         CREATE INDEX IF NOT EXISTS idx_pressao_registros_measured_at
             ON pressao_registros (measured_at DESC);
     `);
+
+    const columns = database.prepare('PRAGMA table_info(pressao_registros)').all();
+    const hasObservacao = columns.some(col => col.name === 'observacao');
+    if (!hasObservacao) {
+        database.exec('ALTER TABLE pressao_registros ADD COLUMN observacao TEXT');
+    }
 }
 
 function fileChecksum(content) {
@@ -263,7 +269,7 @@ function listRecordsByMonth(month) {
     ensureInitialized();
 
     const rows = ensureDb().prepare(`
-        SELECT id, measured_at AS data_hora, pas AS PAS, pad AS PAD
+        SELECT id, measured_at AS data_hora, pas AS PAS, pad AS PAD, observacao
         FROM pressao_registros
         WHERE measured_at LIKE ?
         ORDER BY measured_at DESC, id DESC
@@ -273,26 +279,57 @@ function listRecordsByMonth(month) {
         id: Number(row.id),
         data_hora: row.data_hora,
         PAS: Number(row.PAS),
-        PAD: Number(row.PAD)
+        PAD: Number(row.PAD),
+        observacao: row.observacao || null
     }));
 }
 
-function addRecord({ pas, pad }) {
+function addRecord({ pas, pad, observacao }) {
     ensureInitialized();
 
     const measuredAt = nowTimestamp();
     const createdAt = nowTimestamp();
     const result = ensureDb().prepare(`
-        INSERT INTO pressao_registros (measured_at, pas, pad, created_at, source)
-        VALUES (?, ?, ?, ?, ?)
-    `).run(measuredAt, pas, pad, createdAt, 'manual');
+        INSERT INTO pressao_registros (measured_at, pas, pad, observacao, created_at, source)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `).run(measuredAt, pas, pad, observacao || null, createdAt, 'manual');
 
     return {
         id: Number(result.lastInsertRowid),
         data_hora: measuredAt,
         PAS: pas,
-        PAD: pad
+        PAD: pad,
+        observacao: observacao || null
     };
+}
+
+function updateRecord(id, { pas, pad, observacao, measuredAt }) {
+    ensureInitialized();
+
+    const result = ensureDb().prepare(`
+        UPDATE pressao_registros
+        SET pas = ?, pad = ?, observacao = ?, measured_at = ?
+        WHERE id = ?
+    `).run(pas, pad, observacao || null, measuredAt, id);
+
+    if (result.changes === 0) {
+        return null;
+    }
+
+    return {
+        id: Number(id),
+        data_hora: measuredAt,
+        PAS: pas,
+        PAD: pad,
+        observacao: observacao || null
+    };
+}
+
+function deleteRecord(id) {
+    ensureInitialized();
+
+    const result = ensureDb().prepare('DELETE FROM pressao_registros WHERE id = ?').run(id);
+    return result.changes > 0;
 }
 
 module.exports = {
@@ -301,5 +338,7 @@ module.exports = {
     importLegacyCsvFiles,
     listMonths,
     listRecordsByMonth,
-    addRecord
+    addRecord,
+    updateRecord,
+    deleteRecord
 };
